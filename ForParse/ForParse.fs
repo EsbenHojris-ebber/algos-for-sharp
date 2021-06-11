@@ -10,6 +10,10 @@ module Parser =
 
     type Parser<'T> = Parser of (string -> ParseResult<'T * string>)
 
+    let run parser input =
+        let (Parser innerFn) = parser
+        innerFn input
+
     let pchar charToMatch =
         let innerFn str =
             if System.String.IsNullOrEmpty(str) then
@@ -25,6 +29,21 @@ module Parser =
         
         Parser innerFn
 
-    let run parser input =
-        let (Parser innerFn) = parser
-        innerFn input
+    let andThen parser1 parser2 =
+        let innerFn input =
+            let result1 = run parser1 input
+
+            match result1 with
+            | Failure err -> Failure err
+            | Success (value1, remaining1) ->
+                let result2 = run parser2 remaining1
+
+                match result2 with
+                | Failure err -> Failure err
+                | Success (value2, remaining2) ->
+                    let newValue = (value1, value2)
+                    Success (newValue, remaining2)
+
+        Parser innerFn
+
+    let ( .>>. ) p1 p2 = andThen p1 p2
