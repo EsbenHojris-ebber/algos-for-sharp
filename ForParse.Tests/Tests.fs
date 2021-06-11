@@ -25,7 +25,7 @@ let ``Parse any - failure`` (c, inp, msg) =
 [<InlineData('A', 'B', "ABC", "C")>]
 [<InlineData('B', 'C', "BC", "")>]
 [<InlineData('A', 'A', "AAAAC", "AAC")>]
-let ``Parse two - success`` (c1, c2, inp, exp) =
+let ``Parse two and - success`` (c1, c2, inp, exp) =
     let parse1 = pchar c1
     let parse2 = pchar c2
     let parse1and2 = parse1 .>>. parse2
@@ -38,7 +38,7 @@ let ``Parse two - success`` (c1, c2, inp, exp) =
 [<InlineData('B', 'D', "BC", "Expecting 'D'. Got 'C'")>]
 [<InlineData('A', 'A', "", "No more input")>]
 [<InlineData('A', 'A', "A", "No more input")>]
-let ``Parse two - failure`` (c1, c2, inp, msg) =
+let ``Parse two and - failure`` (c1, c2, inp, msg) =
     let parse1 = pchar c1
     let parse2 = pchar c2
     let parse1and2 = parse1 .>>. parse2
@@ -46,3 +46,38 @@ let ``Parse two - failure`` (c1, c2, inp, msg) =
     let act = run parse1and2 inp
     Assert.Equal (Failure msg, act)
 
+[<Theory>]
+[<InlineData('A', 'B', "ABC", "BC")>]
+[<InlineData('B', 'C', "BC", "C")>]
+[<InlineData('A', 'D', "AAAAC", "AAAC")>]
+let ``Parse two or first - success`` (c1, c2, inp, exp) =
+    let parse1 = pchar c1
+    let parse2 = pchar c2
+    let parse1and2 = parse1 <|> parse2
+
+    let act = run parse1and2 inp
+    Assert.Equal (Success (c1, exp), act)
+
+[<Theory>]
+[<InlineData('A', 'B', "BBC", "BC")>]
+[<InlineData('C', 'B', "BC", "C")>]
+[<InlineData('B', 'A', "AAAAC", "AAAC")>]
+let ``Parse two or second - success`` (c1, c2, inp, exp) =
+    let parse1 = pchar c1
+    let parse2 = pchar c2
+    let parse1and2 = parse1 <|> parse2
+
+    let act = run parse1and2 inp
+    Assert.Equal (Success (c2, exp), act)
+
+[<Theory>]
+[<InlineData('B', 'C', "ABC", "Expecting 'C'. Got 'A'")>]
+[<InlineData('A', 'D', "BC", "Expecting 'D'. Got 'B'")>]
+[<InlineData('B', 'C', "", "No more input")>]
+let ``Parse two or - failure`` (c1, c2, inp, msg) =
+    let parse1 = pchar c1
+    let parse2 = pchar c2
+    let parse1and2 = parse1 <|> parse2
+
+    let act = run parse1and2 inp
+    Assert.Equal (Failure msg, act)

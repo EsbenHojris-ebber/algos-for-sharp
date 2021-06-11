@@ -13,6 +13,9 @@ module Parser =
     val pchar   : char -> Parser<char>
 
     val andThen : Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
+    val orElse  : Parser<'a> -> Parser<'a> -> Parser<'a>
+
     val ( .>>. ): Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
+    val ( <|> ) : Parser<'a> -> Parser<'a> -> Parser<'a>
 
     val run     : Parser<'a> -> string -> ParseResult<'a * string>

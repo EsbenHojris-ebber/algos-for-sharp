@@ -46,4 +46,18 @@ module Parser =
 
         Parser innerFn
 
+    let orElse parser1 parser2 =
+        let innerFn input =
+            let result1 = run parser1 input
+
+            match result1 with
+            | Success _ -> result1
+            | Failure _ ->
+                let result2 = run parser2 input
+
+                result2
+
+        Parser innerFn
+
     let ( .>>. ) p1 p2 = andThen p1 p2
+    let (<|>) p1 p2 = orElse p1 p2
