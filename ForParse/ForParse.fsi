@@ -7,5 +7,8 @@ module Parser =
     type ParseResult<'a> =
         | Success of 'a
         | Failure of string
+    
+    type Parser<'T>
 
-    val pchar  : char -> string -> ParseResult<char * string>
+    val pchar   : char -> Parser<char>
+    val run     : Parser<'a> -> string -> ParseResult<'a * string>
