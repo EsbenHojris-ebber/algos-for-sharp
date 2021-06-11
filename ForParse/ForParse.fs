@@ -4,11 +4,18 @@
 namespace ForParse
 
 module Parser =
-    let parseA str =
+    type ParseResult<'a> =
+        | Success of 'a
+        | Failure of string
+
+    let pchar (charToMatch, str) =
         if System.String.IsNullOrEmpty(str) then
-            (false, "")
-        else if str.[0] = 'A' then
-            let remaining = str.[1..]
-            (true, remaining)
+            Failure "No more input"
         else
-            (false, str)
+            let first = str.[0]
+            if first = charToMatch then
+                let rem = str.[1..]
+                Success (charToMatch, rem)
+            else
+                let msg = sprintf "Expecting '%c'. Got '%c'" charToMatch first
+                Failure msg

@@ -4,4 +4,8 @@
 namespace ForParse
 
 module Parser =
-    val parseA : string -> bool * string
+    type ParseResult<'a> =
+        | Success of 'a
+        | Failure of string
+
+    val pchar  : char * string -> ParseResult<char * string>
