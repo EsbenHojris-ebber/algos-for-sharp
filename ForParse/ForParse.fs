@@ -61,3 +61,10 @@ module Parser =
 
     let ( .>>. ) p1 p2 = andThen p1 p2
     let (<|>) p1 p2 = orElse p1 p2
+
+    let choice ps = List.reduce (<|>) ps
+
+    let anyOf cs = 
+        cs
+        |> List.map pchar
+        |> choice

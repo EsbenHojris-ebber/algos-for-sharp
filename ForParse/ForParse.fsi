@@ -11,9 +11,11 @@ module Parser =
     type Parser<'T>
 
     val pchar   : char -> Parser<char>
+    val anyOf   : char list -> Parser<char>
 
     val andThen : Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val orElse  : Parser<'a> -> Parser<'a> -> Parser<'a>
+    val choice  : Parser<'a> list -> Parser<'a>
 
     val ( .>>. ): Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val ( <|> ) : Parser<'a> -> Parser<'a> -> Parser<'a>
