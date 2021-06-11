@@ -8,4 +8,4 @@ module Parser =
         | Success of 'a
         | Failure of string
 
-    val pchar  : char * string -> ParseResult<char * string>
+    val pchar  : char -> string -> ParseResult<char * string>

@@ -8,7 +8,7 @@ module Parser =
         | Success of 'a
         | Failure of string
 
-    let pchar (charToMatch, str) =
+    let pchar charToMatch str =
         if System.String.IsNullOrEmpty(str) then
             Failure "No more input"
         else

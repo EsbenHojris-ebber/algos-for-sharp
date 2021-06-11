@@ -10,7 +10,7 @@ open ForParse
 [<InlineData('B', "BC", "C")>]
 [<InlineData('A', "AAAAC", "AAAC")>]
 let ``Parse any - success`` (c, inp, exp) =
-    let act = Parser.pchar (c, inp)
+    let act = Parser.pchar c inp
     Assert.Equal (Parser.Success (c, exp), act)
 
 [<Theory>]
@@ -18,5 +18,5 @@ let ``Parse any - success`` (c, inp, exp) =
 [<InlineData('A', "", "No more input")>]
 [<InlineData('B', "AAAAC", "Expecting 'B'. Got 'A'")>]
 let ``Parse any - failure`` (c, inp, msg) =
-    let act = Parser.pchar (c, inp)
+    let act = Parser.pchar c inp
     Assert.Equal (Parser.Failure msg, act)
