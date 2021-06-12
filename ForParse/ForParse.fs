@@ -102,3 +102,12 @@ module Parser =
         returnP f
         <*> xP
         <*> yP
+
+    let rec sequence parserList =
+        let cons head tail = head::tail
+
+        let consP = lift2 cons
+
+        match parserList with
+        | []    -> returnP []
+        | p::ps -> consP p (sequence ps)
