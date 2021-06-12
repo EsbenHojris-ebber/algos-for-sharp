@@ -17,10 +17,14 @@ module Parser =
     val orElse  : Parser<'a> -> Parser<'a> -> Parser<'a>
     val choice  : Parser<'a> list -> Parser<'a>
     val mapP    : ('a -> 'b) -> Parser<'a> -> Parser<'b>
+    val returnP : 'a -> Parser<'a>
+    val applyP  : Parser<'a -> 'b> -> Parser<'a> -> Parser<'b>
+    val lift2   : ('a -> 'b -> 'c) -> Parser<'a> -> Parser<'b> -> Parser<'c>
 
     val ( .>>. ): Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val ( <|> ) : Parser<'a> -> Parser<'a> -> Parser<'a>
     val ( <!> ) : ('a -> 'b) -> Parser<'a> -> Parser<'b>
     val ( |>> ) : Parser<'a> -> ('a -> 'b) -> Parser<'b>
+    val ( <*> ) : Parser<'a -> 'b> -> Parser<'a> -> Parser<'b>
 
     val run     : Parser<'a> -> string -> ParseResult<'a * string>

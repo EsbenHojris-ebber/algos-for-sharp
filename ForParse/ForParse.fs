@@ -85,3 +85,20 @@ module Parser =
     let ( <!> ) f p = mapP f p
 
     let ( |>> ) p f = mapP f p
+
+    let returnP x =
+        let innerFn input =
+            Success (x, input)
+
+        Parser innerFn
+
+    let applyP fP xP =
+        (fP .>>. xP)
+        |> mapP (fun (f, x) -> f x)
+
+    let ( <*> ) fP xP = applyP fP xP
+
+    let lift2 f xP yP =
+        returnP f
+        <*> xP
+        <*> yP
