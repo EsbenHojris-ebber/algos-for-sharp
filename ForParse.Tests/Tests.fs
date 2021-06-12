@@ -81,3 +81,24 @@ let ``Parse two or - failure`` (c1, c2, inp, msg) =
 
     let act = run parse1and2 inp
     Assert.Equal (Failure msg, act)
+
+let parseThreeDigits = 
+    let digit = anyOf ['0'..'9']
+
+    digit .>>. digit .>>. digit
+    |>> fun ((c1, c2), c3) -> System.String [|c1; c2; c3|]
+
+[<Theory>]
+[<InlineData("425DV", "425", "DV")>]
+[<InlineData("5784XV", "578", "4XV")>]
+[<InlineData("426", "426", "")>]
+let ``Parse three digits - success`` (inp, value, rem) =
+    let act = run parseThreeDigits inp
+    Assert.Equal (Success (value, rem), act)
+
+[<Theory>]
+[<InlineData("42DV", "Expecting '9'. Got 'D'")>]
+[<InlineData("57", "No more input")>]
+let ``Parse three digits - failure`` (inp, msg) =
+    let act = run parseThreeDigits inp
+    Assert.Equal (Failure msg, act)

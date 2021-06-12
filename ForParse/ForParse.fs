@@ -46,6 +46,8 @@ module Parser =
 
         Parser innerFn
 
+    let ( .>>. ) p1 p2 = andThen p1 p2
+
     let orElse parser1 parser2 =
         let innerFn input =
             let result1 = run parser1 input
@@ -59,8 +61,7 @@ module Parser =
 
         Parser innerFn
 
-    let ( .>>. ) p1 p2 = andThen p1 p2
-    let (<|>) p1 p2 = orElse p1 p2
+    let ( <|> ) p1 p2 = orElse p1 p2
 
     let choice ps = List.reduce (<|>) ps
 
@@ -68,3 +69,19 @@ module Parser =
         cs
         |> List.map pchar
         |> choice
+
+    let mapP f parser =
+        let innerFn input =
+            let result = run parser input
+
+            match result with
+            | Success (value, rem) ->
+                let newValue = f value
+                Success (newValue, rem)
+            | Failure err -> Failure err
+
+        Parser innerFn
+
+    let ( <!> ) f p = mapP f p
+
+    let ( |>> ) p f = mapP f p
