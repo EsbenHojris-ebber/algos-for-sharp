@@ -39,6 +39,7 @@ module Parser =
 
     let bindP f p1 =
         let label = sprintf "bind operation from %s" (getLabel p1)
+        
         let innerFn input =
             let result = run p1 input
 
@@ -55,6 +56,7 @@ module Parser =
 
     let returnP x =
         let label = "return operation"
+
         let innerFn input =
             Success (x, input)
 
@@ -78,10 +80,12 @@ module Parser =
     let pchar charToMatch =
         let p c = (c = charToMatch)
         let label = sprintf "'%c'" charToMatch
+
         satisfy p label
 
     let andThen parser1 parser2 =
         let label = sprintf "%s and then %s" (getLabel parser1) (getLabel parser2)
+
         parser1 >>= (fun r1 ->
         parser2 >>= (fun r2 ->
         returnP ((r1, r2))))
@@ -91,6 +95,7 @@ module Parser =
 
     let orElse parser1 parser2 =
         let label = sprintf "%s or else %s" (getLabel parser1) (getLabel parser2)
+
         let innerFn input =
             let result1 = run parser1 input
 
@@ -111,6 +116,7 @@ module Parser =
 
     let anyOf cs = 
         let label = sprintf "any of %A" cs
+
         cs
         |> List.map pchar
         |> choice
@@ -128,6 +134,7 @@ module Parser =
 
     let applyP fP xP =
         let label = sprintf "applying from %s to %s" (getLabel fP) (getLabel xP)
+
         fP >>= (fun f ->
         xP >>= (f >> returnP))
         <?> label
@@ -136,9 +143,11 @@ module Parser =
 
     let lift2 f xP yP =
         let label = sprintf "lifting %s to %s" (getLabel xP) (getLabel yP)
+
         returnP f
         <*> xP
         <*> yP
+        <?> label
 
     let rec sequence parserList =
         let cons head tail = head::tail
@@ -153,6 +162,7 @@ module Parser =
 
     let pstring (str : string) =
         let label = str
+
         str
         |> List.ofSeq
         |> List.map pchar
@@ -162,6 +172,7 @@ module Parser =
 
     let rec parseZeroOrMore parser input =
         let firstResult = run parser input
+
         match firstResult with
         | Failure _ -> ([], input)
         | Success (firstValue, inputAfterFirstValue) ->
@@ -179,11 +190,14 @@ module Parser =
     let whitespaceChar = 
         let p = System.Char.IsWhiteSpace
         let label = "whitespace"
+
         satisfy p label
+
     let whitespace = many whitespaceChar
 
     let many1 parser =
         let label = sprintf "at least one %s" (getLabel parser)
+
         parser      >>= (fun head ->
         many parser >>= (fun tail ->
         head :: tail |> returnP))
@@ -192,10 +206,12 @@ module Parser =
     let opt p =
         let some = p |>> Some
         let none = returnP None
+
         some <|> none
 
     let pint =
         let label = "int"
+
         let resultsToInt (sign, charList) = 
             let i = charList |> List.toArray |> System.String |> int
             match sign with
@@ -206,6 +222,7 @@ module Parser =
             let p = System.Char.IsDigit
             let label = "digit"
             satisfy p label
+
         let digits = many1 digit
 
         pchar '-'
