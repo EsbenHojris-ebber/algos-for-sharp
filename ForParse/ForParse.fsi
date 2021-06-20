@@ -17,6 +17,7 @@ module Parser =
     val pstring : string -> Parser<string>
     val anyOf   : char list -> Parser<char>
     val many    : Parser<'a> -> Parser<'a list>
+    val many1   : Parser<'a> -> Parser<'a list>
 
     val andThen : Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val orElse  : Parser<'a> -> Parser<'a> -> Parser<'a>

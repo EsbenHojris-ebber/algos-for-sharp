@@ -139,3 +139,16 @@ module Parser =
 
     let whitespaceChar = anyOf [' '; '\t'; '\n']
     let whitespace = many whitespaceChar
+
+    let many1 parser =
+        let innerFn input =
+            let firstResult = run parser input
+            match firstResult with
+            | Failure err -> Failure err
+            | Success (firstValue, remAftFirst) ->
+                let (subsequentValues, remainingInput) =
+                    parseZeroOrMore parser remAftFirst
+                let values = firstValue :: subsequentValues
+                Success (values, remainingInput)
+            
+        Parser innerFn
