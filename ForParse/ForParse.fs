@@ -79,8 +79,7 @@ module Parser =
         |> List.map pchar
         |> choice
 
-    let mapP f parser =
-        parser >>= (f >> returnP)
+    let mapP f parser = parser >>= (f >> returnP)
 
     let ( <!> ) f p = mapP f p
 
@@ -130,8 +129,7 @@ module Parser =
             (values, remainingInput)
 
     let many parser =
-        let innerFn input =
-            Success (parseZeroOrMore parser input)
+        let innerFn input = parseZeroOrMore parser input |> Success
 
         Parser innerFn
 
@@ -158,7 +156,7 @@ module Parser =
         let digit = anyOf ['0' .. '9']
         let digits = many1 digit
 
-        pchar '-' 
+        pchar '-'
         |> opt
         .>>. digits
         |> mapP resultsToInt
