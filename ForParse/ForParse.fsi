@@ -10,8 +10,13 @@ module Parser =
     
     type Parser<'T>
 
+    val whitespaceChar  : Parser<char>
+    val whitespace      : Parser<char list>
+
     val pchar   : char -> Parser<char>
+    val pstring : string -> Parser<string>
     val anyOf   : char list -> Parser<char>
+    val many    : Parser<'a> -> Parser<'a list>
 
     val andThen : Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val orElse  : Parser<'a> -> Parser<'a> -> Parser<'a>
@@ -21,7 +26,6 @@ module Parser =
     val applyP  : Parser<'a -> 'b> -> Parser<'a> -> Parser<'b>
     val lift2   : ('a -> 'b -> 'c) -> Parser<'a> -> Parser<'b> -> Parser<'c>
     val sequence: Parser<'a> list -> Parser<'a list>
-    val pstring : string -> Parser<string>
 
     val ( .>>. ): Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val ( <|> ) : Parser<'a> -> Parser<'a> -> Parser<'a>

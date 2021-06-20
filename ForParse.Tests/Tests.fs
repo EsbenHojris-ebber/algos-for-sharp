@@ -120,3 +120,23 @@ let ``Parse string - failure`` (inp, pat, msg) =
     let parser = pstring pat
     let act = run parser inp
     Assert.Equal (Failure msg, act)
+
+[<Theory>]
+[<InlineData("ABDE", "A", "BDE")>]
+[<InlineData("AAAB", "AAA", "B")>]
+[<InlineData("CCDB", "", "CCDB")>]
+[<InlineData("AAA", "AAA", "")>]
+let ``Parse many chars`` (inp, value, rem) =
+    let parser = pchar 'A' |> many |>> (List.toArray >> String)
+    let act = run parser inp
+    Assert.Equal (Success (value, rem), act)
+
+[<Theory>]
+[<InlineData("AB", "ABABDE", "ABAB", "DE")>]
+[<InlineData("AA", "AAAB", "AA", "AB")>]
+[<InlineData("CCD", "CCDCCDB", "CCDCCD", "B")>]
+[<InlineData("fjkldsnm", "AAA", "", "AAA")>]
+let ``Parse many strings`` (pat, inp, value, rem) =
+    let parser = pstring pat |> many |>> String.concat ""
+    let act = run parser inp
+    Assert.Equal (Success (value, rem), act)
