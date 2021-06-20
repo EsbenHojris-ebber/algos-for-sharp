@@ -59,22 +59,26 @@ module Parser =
             Success (x, input)
 
         { parseFn = innerFn; label = label }
-        
-    let pchar charToMatch =
-        let label = sprintf "'%c'" charToMatch
-        let innerFn str =
-            if System.String.IsNullOrEmpty(str) then
-                Failure (str, "No more input")
+
+    let satisfy p label =
+        let innerFn input =
+            if System.String.IsNullOrEmpty input then
+                Failure (label, "No more input")
             else
-                let first = str.[0]
-                if first = charToMatch then
-                    let rem = str.[1..]
-                    Success (charToMatch, rem)
+                let first = input.[0]
+                if p first then
+                    let rem = input.[1..]
+                    Success (first, rem)
                 else
                     let msg = sprintf "Unexpected '%c'" first
-                    Failure (str, msg)
-        
+                    Failure (label, msg)
+
         { parseFn = innerFn; label = label }
+        
+    let pchar charToMatch =
+        let p c = (c = charToMatch)
+        let label = sprintf "'%c'" charToMatch
+        satisfy p label
 
     let andThen parser1 parser2 =
         let label = sprintf "%s and then %s" (getLabel parser1) (getLabel parser2)
@@ -95,7 +99,9 @@ module Parser =
             | Failure _ ->
                 let result2 = run parser2 input
 
-                result2
+                match result2 with
+                | Success _ -> result2
+                | Failure (_, err) -> Failure (label, err)
 
         { parseFn = innerFn; label = label }
 

@@ -17,6 +17,7 @@ module Parser =
     val whitespace      : Parser<char list>
     val pint            : Parser<int>
 
+    val satisfy : (char -> bool) -> ParserLabel -> Parser<char>
     val pchar   : char -> Parser<char>
     val pstring : string -> Parser<string>
     val anyOf   : char list -> Parser<char>

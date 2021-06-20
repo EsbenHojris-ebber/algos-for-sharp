@@ -17,9 +17,9 @@ let ``Parse any - success`` (c, inp, exp) =
 [<InlineData('A', "BC", "Unexpected 'B'")>]
 [<InlineData('A', "", "No more input")>]
 [<InlineData('B', "AAAAC", "Unexpected 'A'")>]
-let ``Parse any - failure`` (c, inp, msg) =
+let ``Parse any - failure`` (c, inp, errmsg) =
     let act = run (pchar c) inp
-    Assert.Equal (Failure (inp, msg), act)
+    Assert.Equal (Failure (sprintf "'%c'" c, errmsg), act)
 
 [<Theory>]
 [<InlineData('A', 'B', "ABC", "C")>]
@@ -34,17 +34,17 @@ let ``Parse two and - success`` (c1, c2, inp, exp) =
     Assert.Equal (Success ((c1, c2), exp), act)
 
 [<Theory>]
-[<InlineData('A', 'A', "ABC", "BC", "Unexpected 'B'")>]
-[<InlineData('B', 'D', "BC", "C", "Unexpected 'C'")>]
-[<InlineData('A', 'A', "", "", "No more input")>]
-[<InlineData('A', 'A', "A", "", "No more input")>]
-let ``Parse two and - failure`` (c1, c2, inp, labmsg, errmsg) =
+[<InlineData('A', 'A', "ABC", "Unexpected 'B'")>]
+[<InlineData('B', 'D', "BC", "Unexpected 'C'")>]
+[<InlineData('A', 'A', "", "No more input")>]
+[<InlineData('A', 'A', "A", "No more input")>]
+let ``Parse two and - failure`` (c1, c2, inp, errmsg) =
     let parse1 = pchar c1
     let parse2 = pchar c2
     let parse1and2 = parse1 .>>. parse2
 
     let act = run parse1and2 inp
-    Assert.Equal (Failure (labmsg, errmsg), act)
+    Assert.Equal (Failure (sprintf "'%c' and then '%c'" c1 c2, errmsg), act)
 
 [<Theory>]
 [<InlineData('A', 'B', "ABC", "BC")>]
@@ -80,13 +80,15 @@ let ``Parse two or - failure`` (c1, c2, inp, msg) =
     let parse1and2 = parse1 <|> parse2
 
     let act = run parse1and2 inp
-    Assert.Equal (Failure (inp, msg), act)
+    let label = sprintf "%s or else %s" (getLabel parse1) (getLabel parse2)
+    Assert.Equal (Failure (label, msg), act)
 
 let parseThreeDigits = 
     let digit = anyOf ['0'..'9']
 
     digit .>>. digit .>>. digit
     |>> fun ((c1, c2), c3) -> System.String [|c1; c2; c3|]
+    <?> "three digits"
 
 [<Theory>]
 [<InlineData("425DV", "425", "DV")>]
@@ -97,8 +99,8 @@ let ``Parse three digits - success`` (inp, value, rem) =
     Assert.Equal (Success (value, rem), act)
 
 [<Theory>]
-[<InlineData("42DV", "DV", "Unexpected 'D'")>]
-[<InlineData("57", "", "No more input")>]
+[<InlineData("42DV", "three digits", "Unexpected 'D'")>]
+[<InlineData("57", "three digits", "No more input")>]
 let ``Parse three digits - failure`` (inp, labmsg, errmsg) =
     let act = run parseThreeDigits inp
     Assert.Equal (Failure (labmsg, errmsg), act)
@@ -113,13 +115,13 @@ let ``Parse string - success`` (inp, value, rem) =
     Assert.Equal (Success(value, rem), act)
 
 [<Theory>]
-[<InlineData("ABDE", "ABC", "DE", "Unexpected 'D'")>]
-[<InlineData("AB", "ABC", "", "No more input")>]
-[<InlineData("wau DE", "wauw", " DE", "Unexpected ' '")>]
-let ``Parse string - failure`` (inp, pat, labmsg, errmsg) =
+[<InlineData("ABDE", "ABC", "Unexpected 'D'")>]
+[<InlineData("AB", "ABC", "No more input")>]
+[<InlineData("wau DE", "wauw", "Unexpected ' '")>]
+let ``Parse string - failure`` (inp, pat, errmsg) =
     let parser = pstring pat
     let act = run parser inp
-    Assert.Equal (Failure (labmsg, errmsg), act)
+    Assert.Equal (Failure (pat, errmsg), act)
 
 [<Theory>]
 [<InlineData("ABDE", "A", "BDE")>]
@@ -153,14 +155,14 @@ let ``Parse many1 digits - success`` (inp, value, rem) =
     Assert.Equal (Success (value, rem), act)
 
 [<Theory>]
-[<InlineData("ABDE", "ABDE", "Unexpected 'A'")>]
-[<InlineData("", "", "No more input")>]
-[<InlineData("S321", "S321", "Unexpected 'S'")>]
-[<InlineData("-S321", "S321", "Unexpected 'S'")>]
-let ``Parse many1 digits - failure`` (inp, labmsg, errmsg) =
+[<InlineData("ABDE", "Unexpected 'A'")>]
+[<InlineData("", "No more input")>]
+[<InlineData("S321", "Unexpected 'S'")>]
+[<InlineData("-S321", "Unexpected 'S'")>]
+let ``Parse many1 digits - failure`` (inp, errmsg) =
     let parser = pint
     let act = run parser inp
-    Assert.Equal (Failure (labmsg, errmsg), act)
+    Assert.Equal (Failure ("int", errmsg), act)
 
 let parseDigit_withLabel = anyOf ['0' .. '9'] <?> "digit"
 
