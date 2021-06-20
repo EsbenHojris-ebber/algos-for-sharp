@@ -21,11 +21,24 @@ module Parser =
         | Success v -> printfn "%A" v
         | Failure (label, error) -> printfn "Error parsing %s\n%s" label error
 
+    let setLabel parser newLabel =
+        let newInnerFn input =
+            let result = parser.parseFn input
+            match result with
+            | Success s -> Success s
+            | Failure (_, err) -> Failure (newLabel, err)
+
+        { parseFn = newInnerFn; label = newLabel }
+
+    let getLabel parser = parser.label
+
+    let ( <?> ) p l = setLabel p l
+
     let run parser input =
         parser.parseFn input
 
     let bindP f p1 =
-        let label = "unknown"
+        let label = sprintf "bind operation from %s" (getLabel p1)
         let innerFn input =
             let result = run p1 input
 
@@ -41,14 +54,14 @@ module Parser =
     let ( >>= ) p f = bindP f p
 
     let returnP x =
-        let label = "unknown"
+        let label = "return operation"
         let innerFn input =
             Success (x, input)
 
         { parseFn = innerFn; label = label }
         
     let pchar charToMatch =
-        let label = "unknown"
+        let label = sprintf "'%c'" charToMatch
         let innerFn str =
             if System.String.IsNullOrEmpty(str) then
                 Failure (str, "No more input")
@@ -64,14 +77,16 @@ module Parser =
         { parseFn = innerFn; label = label }
 
     let andThen parser1 parser2 =
+        let label = sprintf "%s and then %s" (getLabel parser1) (getLabel parser2)
         parser1 >>= (fun r1 ->
         parser2 >>= (fun r2 ->
         returnP ((r1, r2))))
+        <?> label
 
     let ( .>>. ) p1 p2 = andThen p1 p2
 
     let orElse parser1 parser2 =
-        let label = "unknown"
+        let label = sprintf "%s or else %s" (getLabel parser1) (getLabel parser2)
         let innerFn input =
             let result1 = run parser1 input
 
@@ -89,9 +104,11 @@ module Parser =
     let choice ps = List.reduce (<|>) ps
 
     let anyOf cs = 
+        let label = sprintf "any of %A" cs
         cs
         |> List.map pchar
         |> choice
+        <?> label
 
     let mapP f parser = parser >>= (f >> returnP)
 
@@ -104,12 +121,15 @@ module Parser =
     let ( >>. ) p1 p2 = p1 .>>. p2 |>> snd
 
     let applyP fP xP =
+        let label = sprintf "applying from %s to %s" (getLabel fP) (getLabel xP)
         fP >>= (fun f ->
         xP >>= (f >> returnP))
+        <?> label
 
     let ( <*> ) fP xP = applyP fP xP
 
     let lift2 f xP yP =
+        let label = sprintf "lifting %s to %s" (getLabel xP) (getLabel yP)
         returnP f
         <*> xP
         <*> yP
@@ -126,11 +146,13 @@ module Parser =
     let charListToStr charList = charList |> List.toArray |> System.String
 
     let pstring (str : string) =
+        let label = str
         str
         |> List.ofSeq
         |> List.map pchar
         |> sequence
         |> mapP charListToStr
+        <?> label
 
     let rec parseZeroOrMore parser input =
         let firstResult = run parser input
@@ -143,7 +165,7 @@ module Parser =
             (values, remainingInput)
 
     let many parser =
-        let label = "unknown"
+        let label = sprintf "many %s" (getLabel parser)
         let innerFn input = parseZeroOrMore parser input |> Success
 
         { parseFn = innerFn; label = label }
@@ -152,9 +174,11 @@ module Parser =
     let whitespace = many whitespaceChar
 
     let many1 parser =
+        let label = sprintf "at least one of %s" (getLabel parser)
         parser      >>= (fun head ->
         many parser >>= (fun tail ->
         head :: tail |> returnP))
+        <?> label
 
     let opt p =
         let some = p |>> Some
@@ -162,6 +186,7 @@ module Parser =
         some <|> none
 
     let pint =
+        let label = "int"
         let resultsToInt (sign, charList) = 
             let i = charList |> List.toArray |> System.String |> int
             match sign with
@@ -175,16 +200,4 @@ module Parser =
         |> opt
         .>>. digits
         |> mapP resultsToInt
-
-    let setLabel parser newLabel =
-        let newInnerFn input =
-            let result = parser.parseFn input
-            match result with
-            | Success s -> Success s
-            | Failure (_, err) -> Failure (newLabel, err)
-
-        { parseFn = newInnerFn; label = newLabel }
-
-    let getLabel parser = parser.label
-
-    let ( <?> ) p l = setLabel p l
+        <?> label
