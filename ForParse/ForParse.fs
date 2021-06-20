@@ -176,11 +176,14 @@ module Parser =
 
         { parseFn = innerFn; label = label }
 
-    let whitespaceChar = anyOf [' '; '\t'; '\n']
+    let whitespaceChar = 
+        let p = System.Char.IsWhiteSpace
+        let label = "whitespace"
+        satisfy p label
     let whitespace = many whitespaceChar
 
     let many1 parser =
-        let label = sprintf "at least one of %s" (getLabel parser)
+        let label = sprintf "at least one %s" (getLabel parser)
         parser      >>= (fun head ->
         many parser >>= (fun tail ->
         head :: tail |> returnP))
@@ -199,7 +202,10 @@ module Parser =
             | Some _ -> -i
             | None   -> i
 
-        let digit = anyOf ['0' .. '9']
+        let digit =
+            let p = System.Char.IsDigit
+            let label = "digit"
+            satisfy p label
         let digits = many1 digit
 
         pchar '-'
