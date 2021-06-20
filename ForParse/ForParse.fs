@@ -14,6 +14,27 @@ module Parser =
         let (Parser innerFn) = parser
         innerFn input
 
+    let bindP f p1 =
+        let innerFn input =
+            let result = run p1 input
+
+            match result with
+            | Failure err -> Failure err
+            | Success (value, rem) ->
+                let p2 = f value
+
+                run p2 rem
+
+        Parser innerFn
+
+    let ( >>= ) p f = bindP f p
+
+    let returnP x =
+        let innerFn input =
+            Success (x, input)
+
+        Parser innerFn
+        
     let pchar charToMatch =
         let innerFn str =
             if System.String.IsNullOrEmpty(str) then
@@ -30,21 +51,9 @@ module Parser =
         Parser innerFn
 
     let andThen parser1 parser2 =
-        let innerFn input =
-            let result1 = run parser1 input
-
-            match result1 with
-            | Failure err -> Failure err
-            | Success (value1, remaining1) ->
-                let result2 = run parser2 remaining1
-
-                match result2 with
-                | Failure err -> Failure err
-                | Success (value2, remaining2) ->
-                    let newValue = (value1, value2)
-                    Success (newValue, remaining2)
-
-        Parser innerFn
+        parser1 >>= (fun r1 ->
+        parser2 >>= (fun r2 ->
+        returnP ((r1, r2))))
 
     let ( .>>. ) p1 p2 = andThen p1 p2
 
@@ -71,30 +80,19 @@ module Parser =
         |> choice
 
     let mapP f parser =
-        let innerFn input =
-            let result = run parser input
-
-            match result with
-            | Success (value, rem) ->
-                let newValue = f value
-                Success (newValue, rem)
-            | Failure err -> Failure err
-
-        Parser innerFn
+        parser >>= (f >> returnP)
 
     let ( <!> ) f p = mapP f p
 
     let ( |>> ) p f = mapP f p
+    
+    let ( .>> ) p1 p2 = p1 .>>. p2 |>> fst
 
-    let returnP x =
-        let innerFn input =
-            Success (x, input)
-
-        Parser innerFn
+    let ( >>. ) p1 p2 = p1 .>>. p2 |>> snd
 
     let applyP fP xP =
-        (fP .>>. xP)
-        |> mapP (fun (f, x) -> f x)
+        fP >>= (fun f ->
+        xP >>= (f >> returnP))
 
     let ( <*> ) fP xP = applyP fP xP
 
@@ -141,17 +139,9 @@ module Parser =
     let whitespace = many whitespaceChar
 
     let many1 parser =
-        let innerFn input =
-            let firstResult = run parser input
-            match firstResult with
-            | Failure err -> Failure err
-            | Success (firstValue, remAftFirst) ->
-                let (subsequentValues, remainingInput) =
-                    parseZeroOrMore parser remAftFirst
-                let values = firstValue :: subsequentValues
-                Success (values, remainingInput)
-            
-        Parser innerFn
+        parser      >>= (fun head ->
+        many parser >>= (fun tail ->
+        head :: tail |> returnP))
 
     let opt p =
         let some = p |>> Some
@@ -164,10 +154,11 @@ module Parser =
             match sign with
             | Some _ -> -i
             | None   -> i
+
         let digit = anyOf ['0' .. '9']
         let digits = many1 digit
 
-        pchar '-' |> opt
+        pchar '-' 
+        |> opt
         .>>. digits
         |> mapP resultsToInt
-

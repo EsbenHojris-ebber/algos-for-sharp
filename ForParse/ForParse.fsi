@@ -31,6 +31,8 @@ module Parser =
     val opt     : Parser<'a> -> Parser<'a option>
 
     val ( .>>. ): Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
+    val ( .>> ) : Parser<'a> -> Parser<'b> -> Parser<'a>
+    val ( >>. ) : Parser<'a> -> Parser<'b> -> Parser<'b>
     val ( <|> ) : Parser<'a> -> Parser<'a> -> Parser<'a>
     val ( <!> ) : ('a -> 'b) -> Parser<'a> -> Parser<'b>
     val ( |>> ) : Parser<'a> -> ('a -> 'b) -> Parser<'b>
