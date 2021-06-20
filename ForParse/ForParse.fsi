@@ -15,6 +15,7 @@ module Parser =
 
     val pchar   : char -> Parser<char>
     val pstring : string -> Parser<string>
+    val pint    : Parser<int>
     val anyOf   : char list -> Parser<char>
     val many    : Parser<'a> -> Parser<'a list>
     val many1   : Parser<'a> -> Parser<'a list>

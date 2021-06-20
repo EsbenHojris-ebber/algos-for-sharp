@@ -147,7 +147,7 @@ let ``Parse many strings`` (pat, inp, value, rem) =
 [<InlineData("4276S321", 4276, "S321")>]
 [<InlineData("0AAA", 0, "AAA")>]
 let ``Parse many1 digits - success`` (inp, value, rem) =
-    let parser = anyOf ['0' .. '9'] |> many1 |>> (List.toArray >> String >> int)
+    let parser = pint
     let act = run parser inp
     Assert.Equal (Success (value, rem), act)
 
@@ -156,6 +156,6 @@ let ``Parse many1 digits - success`` (inp, value, rem) =
 [<InlineData("", "No more input")>]
 [<InlineData("S321", "Expecting '9'. Got 'S'")>]
 let ``Parse many1 digits - failure`` (inp, msg) =
-    let parser = anyOf ['0' .. '9'] |> many1 |>> (List.toArray >> String >> int)
+    let parser = pint
     let act = run parser inp
     Assert.Equal (Failure msg, act)

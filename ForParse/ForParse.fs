@@ -152,3 +152,10 @@ module Parser =
                 Success (values, remainingInput)
             
         Parser innerFn
+
+    let pint =
+        let resultsToInt = List.toArray >> System.String >> int
+        let digit = anyOf ['0' .. '9']
+        let digits = many1 digit
+
+        mapP resultsToInt digits
