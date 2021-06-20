@@ -58,7 +58,7 @@ module Parser =
                     let rem = str.[1..]
                     Success (charToMatch, rem)
                 else
-                    let msg = sprintf "Expecting '%c'. Got '%c'" charToMatch first
+                    let msg = sprintf "Unexpected '%c'" first
                     Failure (str, msg)
         
         { parseFn = innerFn; label = label }
@@ -175,3 +175,16 @@ module Parser =
         |> opt
         .>>. digits
         |> mapP resultsToInt
+
+    let setLabel parser newLabel =
+        let newInnerFn input =
+            let result = parser.parseFn input
+            match result with
+            | Success s -> Success s
+            | Failure (_, err) -> Failure (newLabel, err)
+
+        { parseFn = newInnerFn; label = newLabel }
+
+    let getLabel parser = parser.label
+
+    let ( <?> ) p l = setLabel p l

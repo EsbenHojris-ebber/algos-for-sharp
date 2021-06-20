@@ -15,10 +15,10 @@ module Parser =
 
     val whitespaceChar  : Parser<char>
     val whitespace      : Parser<char list>
+    val pint            : Parser<int>
 
     val pchar   : char -> Parser<char>
     val pstring : string -> Parser<string>
-    val pint    : Parser<int>
     val anyOf   : char list -> Parser<char>
     val many    : Parser<'a> -> Parser<'a list>
     val many1   : Parser<'a> -> Parser<'a list>
@@ -34,6 +34,9 @@ module Parser =
     val sequence: Parser<'a> list -> Parser<'a list>
     val opt     : Parser<'a> -> Parser<'a option>
 
+    val setLabel: Parser<'a> -> ParserLabel -> Parser<'a>
+    val getLabel: Parser<'a> -> ParserLabel
+
     val ( >>= ) : Parser<'a> -> ('a -> Parser<'b>) -> Parser<'b>
     val ( .>>. ): Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val ( .>> ) : Parser<'a> -> Parser<'b> -> Parser<'a>
@@ -43,4 +46,7 @@ module Parser =
     val ( |>> ) : Parser<'a> -> ('a -> 'b) -> Parser<'b>
     val ( <*> ) : Parser<'a -> 'b> -> Parser<'a> -> Parser<'b>
 
+    val ( <?> ) : Parser<'a> -> ParserLabel -> Parser<'a>
+
     val run     : Parser<'a> -> string -> ParseResult<'a * string>
+    val printResult : ParseResult<'a> -> unit
