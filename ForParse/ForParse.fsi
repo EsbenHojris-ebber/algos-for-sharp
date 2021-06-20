@@ -20,6 +20,7 @@ module Parser =
     val many    : Parser<'a> -> Parser<'a list>
     val many1   : Parser<'a> -> Parser<'a list>
 
+    val bindP   : ('a -> Parser<'b>) -> Parser<'a> -> Parser<'b>
     val andThen : Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val orElse  : Parser<'a> -> Parser<'a> -> Parser<'a>
     val choice  : Parser<'a> list -> Parser<'a>
@@ -30,6 +31,7 @@ module Parser =
     val sequence: Parser<'a> list -> Parser<'a list>
     val opt     : Parser<'a> -> Parser<'a option>
 
+    val ( >>= ) : Parser<'a> -> ('a -> Parser<'b>) -> Parser<'b>
     val ( .>>. ): Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
     val ( .>> ) : Parser<'a> -> Parser<'b> -> Parser<'a>
     val ( >>. ) : Parser<'a> -> Parser<'b> -> Parser<'b>
