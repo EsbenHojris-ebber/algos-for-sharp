@@ -146,6 +146,7 @@ let ``Parse many strings`` (pat, inp, value, rem) =
 [<InlineData("32", 32, "")>]
 [<InlineData("4276S321", 4276, "S321")>]
 [<InlineData("0AAA", 0, "AAA")>]
+[<InlineData("-67AAA", -67, "AAA")>]
 let ``Parse many1 digits - success`` (inp, value, rem) =
     let parser = pint
     let act = run parser inp
@@ -155,6 +156,7 @@ let ``Parse many1 digits - success`` (inp, value, rem) =
 [<InlineData("ABDE", "Expecting '9'. Got 'A'")>]
 [<InlineData("", "No more input")>]
 [<InlineData("S321", "Expecting '9'. Got 'S'")>]
+[<InlineData("-S321", "Expecting '9'. Got 'S'")>]
 let ``Parse many1 digits - failure`` (inp, msg) =
     let parser = pint
     let act = run parser inp

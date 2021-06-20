@@ -153,9 +153,21 @@ module Parser =
             
         Parser innerFn
 
+    let opt p =
+        let some = p |>> Some
+        let none = returnP None
+        some <|> none
+
     let pint =
-        let resultsToInt = List.toArray >> System.String >> int
+        let resultsToInt (sign, charList) = 
+            let i = charList |> List.toArray |> System.String |> int
+            match sign with
+            | Some _ -> -i
+            | None   -> i
         let digit = anyOf ['0' .. '9']
         let digits = many1 digit
 
-        mapP resultsToInt digits
+        pchar '-' |> opt
+        .>>. digits
+        |> mapP resultsToInt
+
