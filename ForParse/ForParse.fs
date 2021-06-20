@@ -111,3 +111,12 @@ module Parser =
         match parserList with
         | []    -> returnP []
         | p::ps -> consP p (sequence ps)
+
+    let charListToStr charList = charList |> List.toArray |> System.String
+
+    let pstring (str : string) =
+        str
+        |> List.ofSeq
+        |> List.map pchar
+        |> sequence
+        |> mapP charListToStr

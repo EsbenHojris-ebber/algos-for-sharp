@@ -102,3 +102,21 @@ let ``Parse three digits - success`` (inp, value, rem) =
 let ``Parse three digits - failure`` (inp, msg) =
     let act = run parseThreeDigits inp
     Assert.Equal (Failure msg, act)
+
+[<Theory>]
+[<InlineData("ABCDE", "ABC", "DE")>]
+[<InlineData("ABC", "ABC", "")>]
+[<InlineData("wauw DE", "wauw", " DE")>]
+let ``Parse string - success`` (inp, value, rem) =
+    let parser = pstring value
+    let act = run parser inp
+    Assert.Equal (Success(value, rem), act)
+
+[<Theory>]
+[<InlineData("ABDE", "ABC", "Expecting 'C'. Got 'D'")>]
+[<InlineData("AB", "ABC", "No more input")>]
+[<InlineData("wau DE", "wauw", "Expecting 'w'. Got ' '")>]
+let ``Parse string - failure`` (inp, pat, msg) =
+    let parser = pstring pat
+    let act = run parser inp
+    Assert.Equal (Failure msg, act)
