@@ -4,9 +4,12 @@
 namespace ForParse
 
 module Parser =
+    type ParserLabel = string
+    type ParserError = string
+
     type ParseResult<'a> =
         | Success of 'a
-        | Failure of string
+        | Failure of ParserLabel * ParserError
     
     type Parser<'T>
 

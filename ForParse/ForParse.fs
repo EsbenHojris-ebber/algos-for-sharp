@@ -4,41 +4,54 @@
 namespace ForParse
 
 module Parser =
+    type ParserLabel = string
+    type ParserError = string
+
     type ParseResult<'a> =
         | Success of 'a
-        | Failure of string
+        | Failure of ParserLabel * ParserError
 
-    type Parser<'T> = Parser of (string -> ParseResult<'T * string>)
+    type Parser<'a> = {
+        parseFn : string -> ParseResult<'a * string>
+        label   : ParserLabel
+    }
+
+    let printResult =
+        function
+        | Success v -> printfn "%A" v
+        | Failure (label, error) -> printfn "Error parsing %s\n%s" label error
 
     let run parser input =
-        let (Parser innerFn) = parser
-        innerFn input
+        parser.parseFn input
 
     let bindP f p1 =
+        let label = "unknown"
         let innerFn input =
             let result = run p1 input
 
             match result with
-            | Failure err -> Failure err
+            | Failure (label, err) -> Failure (label, err)
             | Success (value, rem) ->
                 let p2 = f value
 
                 run p2 rem
 
-        Parser innerFn
+        { parseFn = innerFn; label = label }
 
     let ( >>= ) p f = bindP f p
 
     let returnP x =
+        let label = "unknown"
         let innerFn input =
             Success (x, input)
 
-        Parser innerFn
+        { parseFn = innerFn; label = label }
         
     let pchar charToMatch =
+        let label = "unknown"
         let innerFn str =
             if System.String.IsNullOrEmpty(str) then
-                Failure "No more input"
+                Failure (str, "No more input")
             else
                 let first = str.[0]
                 if first = charToMatch then
@@ -46,9 +59,9 @@ module Parser =
                     Success (charToMatch, rem)
                 else
                     let msg = sprintf "Expecting '%c'. Got '%c'" charToMatch first
-                    Failure msg
+                    Failure (str, msg)
         
-        Parser innerFn
+        { parseFn = innerFn; label = label }
 
     let andThen parser1 parser2 =
         parser1 >>= (fun r1 ->
@@ -58,6 +71,7 @@ module Parser =
     let ( .>>. ) p1 p2 = andThen p1 p2
 
     let orElse parser1 parser2 =
+        let label = "unknown"
         let innerFn input =
             let result1 = run parser1 input
 
@@ -68,7 +82,7 @@ module Parser =
 
                 result2
 
-        Parser innerFn
+        { parseFn = innerFn; label = label }
 
     let ( <|> ) p1 p2 = orElse p1 p2
 
@@ -129,9 +143,10 @@ module Parser =
             (values, remainingInput)
 
     let many parser =
+        let label = "unknown"
         let innerFn input = parseZeroOrMore parser input |> Success
 
-        Parser innerFn
+        { parseFn = innerFn; label = label }
 
     let whitespaceChar = anyOf [' '; '\t'; '\n']
     let whitespace = many whitespaceChar
