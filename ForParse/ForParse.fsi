@@ -37,6 +37,7 @@ module Parser =
     val anyOf   : char list -> Parser<char>
     val many    : Parser<'a> -> Parser<'a list>
     val many1   : Parser<'a> -> Parser<'a list>
+    val manyChars1 : Parser<char> -> Parser<string>
 
     val bindP   : ('a -> Parser<'b>) -> Parser<'a> -> Parser<'b>
     val andThen : Parser<'a> -> Parser<'b> -> Parser<'a * 'b>
@@ -65,3 +66,5 @@ module Parser =
 
     val run     : Parser<'a> -> string -> ParseResult<'a * InputState>
     val printResult : ParseResult<'a> -> unit
+
+    val charListToString : char list -> string

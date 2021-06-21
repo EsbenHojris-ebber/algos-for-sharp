@@ -225,7 +225,7 @@ module Parser =
         | []    -> returnP []
         | p::ps -> consP p (sequence ps)
 
-    let charListToStr charList = charList |> List.toArray |> System.String
+    let charListToString charList = charList |> List.toArray |> System.String
 
     let pstring (str : string) =
         let label = str
@@ -234,7 +234,7 @@ module Parser =
         |> List.ofSeq
         |> List.map pchar
         |> sequence
-        |> mapP charListToStr
+        |> mapP charListToString
         <?> label
 
     let rec parseZeroOrMore parser input =
@@ -253,6 +253,8 @@ module Parser =
         let innerFn input = parseZeroOrMore parser input |> Success
 
         { parseFn = innerFn; label = label }
+
+    let manyChars1 c = many c |>> charListToString
 
     let whitespaceChar = 
         let p = System.Char.IsWhiteSpace
