@@ -40,6 +40,7 @@ module Parser =
     val anyOf   : char list -> Parser<char>
     val many    : Parser<'a> -> Parser<'a list>
     val many1   : Parser<'a> -> Parser<'a list>
+    val manyChars  : Parser<char> -> Parser<string>
     val manyChars1 : Parser<char> -> Parser<string>
 
     val bindP   : ('a -> Parser<'b>) -> Parser<'a> -> Parser<'b>

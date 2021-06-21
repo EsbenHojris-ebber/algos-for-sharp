@@ -262,6 +262,8 @@ module Parser =
         head :: tail |> returnP))
         <?> label
 
+    let manyChars c = many c |>> charListToString
+
     let manyChars1 c = many1 c |>> charListToString
 
     let whitespaceChar = 
