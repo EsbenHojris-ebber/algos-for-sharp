@@ -6,10 +6,24 @@ namespace ForParse
 module Parser =
     type ParserLabel = string
     type ParserError = string
+    type ParserPosition = {
+        currentLine : string
+        line    : int
+        coloumn : int
+    }
 
     type ParseResult<'a> =
         | Success of 'a
-        | Failure of ParserLabel * ParserError
+        | Failure of ParserLabel * ParserError * ParserPosition
+
+    type Position = {
+        line    : int
+        coloumn : int
+    }
+    type InputState = {
+        lines    : string[]
+        position : Position
+    }
     
     type Parser<'T>
 
@@ -49,5 +63,5 @@ module Parser =
 
     val ( <?> ) : Parser<'a> -> ParserLabel -> Parser<'a>
 
-    val run     : Parser<'a> -> string -> ParseResult<'a * string>
+    val run     : Parser<'a> -> string -> ParseResult<'a * InputState>
     val printResult : ParseResult<'a> -> unit

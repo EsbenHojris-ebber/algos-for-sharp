@@ -4,36 +4,6 @@
 namespace ForParse
 
 module Parser =
-    type ParserLabel = string
-    type ParserError = string
-
-    type ParseResult<'a> =
-        | Success of 'a
-        | Failure of ParserLabel * ParserError
-
-    type Parser<'a> = {
-        parseFn : string -> ParseResult<'a * string>
-        label   : ParserLabel
-    }
-
-    let printResult =
-        function
-        | Success v -> printfn "%A" v
-        | Failure (label, error) -> printfn "Error parsing %s\n%s" label error
-
-    let setLabel parser newLabel =
-        let newInnerFn input =
-            let result = parser.parseFn input
-            match result with
-            | Success s -> Success s
-            | Failure (_, err) -> Failure (newLabel, err)
-
-        { parseFn = newInnerFn; label = newLabel }
-
-    let getLabel parser = parser.label
-
-    let ( <?> ) p l = setLabel p l
-
     type Position = {
         line    : int
         coloumn : int
@@ -53,7 +23,7 @@ module Parser =
     module InputState =
         open System
 
-        let fromstring str =
+        let fromString str =
             if String.IsNullOrEmpty str then
                 { lines = [||]; position = initialPos }
             else
@@ -61,41 +31,88 @@ module Parser =
                 let lines = str.Split(sep, StringSplitOptions.None)
                 { lines = lines; position = initialPos}
 
-    let currentLine inputState =
-        let linepos = inputState.position.line
-        if linepos < inputState.lines.Length then
-            inputState.lines.[linepos]
-        else
-            "end of file"
-
-    let nextChar input =
-        let linePos = input.position.line
-        let colPos = input.position.coloumn
-
-        if linePos >= input.lines.Length then
-            input, None
-        else
-            let currentLine = currentLine input
-            if colPos < currentLine.Length then
-                { input with position = incrCol input.position }, currentLine.[colPos] |> Some
+        let currentLine inputState =
+            let linepos = inputState.position.line
+            if linepos < inputState.lines.Length then
+                inputState.lines.[linepos]
             else
-                { input with position = incrLine input.position }, Some '\n'
+                "end of file"
 
-    let run parser input =
-        parser.parseFn input
+        let nextChar input =
+            let linePos = input.position.line
+            let colPos = input.position.coloumn
+
+            if linePos >= input.lines.Length then
+                input, None
+            else
+                let currentLine = currentLine input
+                if colPos < currentLine.Length then
+                    { input with position = incrCol input.position }, currentLine.[colPos] |> Some
+                else
+                    { input with position = incrLine input.position }, Some '\n'
+    
+    type ParserLabel = string
+    type ParserError = string
+    type ParserPosition = {
+        currentLine : string
+        line    : int
+        coloumn : int
+    }
+
+    let parserPositionFromInputState input = {
+        currentLine = InputState.currentLine input
+        line = input.position.line
+        coloumn = input.position.coloumn
+    }
+
+    type ParseResult<'a> =
+        | Success of 'a
+        | Failure of ParserLabel * ParserError * ParserPosition
+
+    type Parser<'a> = {
+        parseFn : InputState -> ParseResult<'a * InputState>
+        label   : ParserLabel
+    }
+
+    let printResult =
+        function
+        | Success v -> printfn "%A" v
+        | Failure (label, error, parserPos) ->
+            let errorLine = parserPos.currentLine
+            let linePos = parserPos.line
+            let colPos = parserPos.coloumn
+            let failureCaret = sprintf "%*s^%s" colPos "" error
+            printfn "Line:%i Col:%i Error parsing %s\n%s\n%s" linePos colPos label errorLine failureCaret
+
+    let setLabel parser newLabel =
+        let newInnerFn input =
+            let result = parser.parseFn input
+            match result with
+            | Success s -> Success s
+            | Failure (_, err, pos) -> Failure (newLabel, err, pos)
+
+        { parseFn = newInnerFn; label = newLabel }
+
+    let getLabel parser = parser.label
+
+    let ( <?> ) p l = setLabel p l
+
+    let runOnInput parser input = parser.parseFn input
+
+    let run parser inputStr = InputState.fromString inputStr |> runOnInput parser 
 
     let bindP f p1 =
         let label = sprintf "bind operation from %s" (getLabel p1)
         
         let innerFn input =
-            let result = run p1 input
+            let result = runOnInput p1 input
 
             match result with
-            | Failure (label, err) -> Failure (label, err)
+            | Failure (label, err, pos) -> Failure (label, err, pos)
             | Success (value, rem) ->
                 let p2 = f value
 
-                run p2 rem
+                runOnInput p2 rem
 
         { parseFn = innerFn; label = label }
 
@@ -111,16 +128,19 @@ module Parser =
 
     let satisfy p label =
         let innerFn input =
-            if System.String.IsNullOrEmpty input then
-                Failure (label, "No more input")
-            else
-                let first = input.[0]
-                if p first then
-                    let rem = input.[1..]
-                    Success (first, rem)
+            let remainingInput, charOpt = InputState.nextChar input
+            match charOpt with
+            | None -> 
+                let err = "No more input"
+                let pos = parserPositionFromInputState input
+                Failure (label, err, pos)
+            | Some c ->
+                if p c then
+                    Success (c, remainingInput)
                 else
-                    let msg = sprintf "Unexpected '%c'" first
-                    Failure (label, msg)
+                    let err = sprintf "Unexpected '%c'" c
+                    let pos = parserPositionFromInputState input
+                    Failure (label, err, pos)
 
         { parseFn = innerFn; label = label }
         
@@ -144,16 +164,16 @@ module Parser =
         let label = sprintf "%s or else %s" (getLabel parser1) (getLabel parser2)
 
         let innerFn input =
-            let result1 = run parser1 input
+            let result1 = runOnInput parser1 input
 
             match result1 with
             | Success _ -> result1
             | Failure _ ->
-                let result2 = run parser2 input
+                let result2 = runOnInput parser2 input
 
                 match result2 with
                 | Success _ -> result2
-                | Failure (_, err) -> Failure (label, err)
+                | Failure (_, err, pos) -> Failure (label, err, pos)
 
         { parseFn = innerFn; label = label }
 
@@ -218,7 +238,7 @@ module Parser =
         <?> label
 
     let rec parseZeroOrMore parser input =
-        let firstResult = run parser input
+        let firstResult = runOnInput parser input
 
         match firstResult with
         | Failure _ -> ([], input)
