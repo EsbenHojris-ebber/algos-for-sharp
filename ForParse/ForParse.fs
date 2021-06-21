@@ -34,6 +34,53 @@ module Parser =
 
     let ( <?> ) p l = setLabel p l
 
+    type Position = {
+        line    : int
+        coloumn : int
+    }
+
+    let initialPos = { line = 0; coloumn = 0 }
+
+    let incrCol pos = { pos with coloumn = pos.coloumn + 1 }
+
+    let incrLine pos = { line = pos.line; coloumn = 0 }
+
+    type InputState = {
+        lines    : string[]
+        position : Position
+    }
+
+    module InputState =
+        open System
+
+        let fromstring str =
+            if String.IsNullOrEmpty str then
+                { lines = [||]; position = initialPos }
+            else
+                let sep = [| "\r\n"; "\n" |]
+                let lines = str.Split(sep, StringSplitOptions.None)
+                { lines = lines; position = initialPos}
+
+    let currentLine inputState =
+        let linepos = inputState.position.line
+        if linepos < inputState.lines.Length then
+            inputState.lines.[linepos]
+        else
+            "end of file"
+
+    let nextChar input =
+        let linePos = input.position.line
+        let colPos = input.position.coloumn
+
+        if linePos >= input.lines.Length then
+            input, None
+        else
+            let currentLine = currentLine input
+            if colPos < currentLine.Length then
+                { input with position = incrCol input.position }, currentLine.[colPos] |> Some
+            else
+                { input with position = incrLine input.position }, Some '\n'
+
     let run parser input =
         parser.parseFn input
 
