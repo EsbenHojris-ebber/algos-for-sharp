@@ -28,8 +28,11 @@ module Parser =
     type Parser<'T>
 
     val whitespaceChar  : Parser<char>
-    val whitespace      : Parser<char list>
+    val spaces          : Parser<char list>
+    val spaces1         : Parser<char list>
+    val digit           : Parser<char>
     val pint            : Parser<int>
+    val pfloat          : Parser<float>
 
     val satisfy : (char -> bool) -> ParserLabel -> Parser<char>
     val pchar   : char -> Parser<char>

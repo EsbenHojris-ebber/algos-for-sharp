@@ -254,16 +254,6 @@ module Parser =
 
         { parseFn = innerFn; label = label }
 
-    let manyChars1 c = many c |>> charListToString
-
-    let whitespaceChar = 
-        let p = System.Char.IsWhiteSpace
-        let label = "whitespace"
-
-        satisfy p label
-
-    let whitespace = many whitespaceChar
-
     let many1 parser =
         let label = sprintf "at least one %s" (getLabel parser)
 
@@ -272,30 +262,66 @@ module Parser =
         head :: tail |> returnP))
         <?> label
 
+    let manyChars1 c = many1 c |>> charListToString
+
+    let whitespaceChar = 
+        let p = System.Char.IsWhiteSpace
+        let label = "whitespace"
+
+        satisfy p label
+
+    let spaces = many whitespaceChar
+
+    let spaces1 = many1 whitespaceChar
+
     let opt p =
         let some = p |>> Some
         let none = returnP None
 
         some <|> none
 
+    let digit =
+        let p = System.Char.IsDigit
+        let label = "digit"
+        satisfy p label
+
     let pint =
         let label = "int"
 
-        let resultsToInt (sign, charList) = 
-            let i = charList |> List.toArray |> System.String |> int
+        let resultsToInt (sign, str) = 
+            let i = str |> int
             match sign with
             | Some _ -> -i
             | None   -> i
 
-        let digit =
-            let p = System.Char.IsDigit
-            let label = "digit"
-            satisfy p label
-
-        let digits = many1 digit
+        let digits = manyChars1 digit
 
         pchar '-'
         |> opt
         .>>. digits
         |> mapP resultsToInt
         <?> label
+
+    let pfloat =
+        let label = "float"
+
+        let resultsToFloat (sign, str) =
+            let fl = str |> float
+            match sign with
+            | Some _ -> -fl
+            | None   -> fl
+
+        let digits = manyChars1 digit
+
+        let decimals = 
+            digits
+            .>>. pchar '.'
+            .>>. digits
+            |>> (fun ((d1, c), d2) -> sprintf "%s%c%s" d1 c d2)
+        
+        pchar '-'
+        |> opt
+        .>>. decimals
+        |> mapP resultsToFloat
+        <?> label
+

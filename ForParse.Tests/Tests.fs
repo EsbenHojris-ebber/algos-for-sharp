@@ -230,9 +230,8 @@ let ``Parse many strings`` (pat, inp, value, endPos) =
 [<InlineData("4276S321", 4276, 4)>]
 [<InlineData("0AAA", 0, 1)>]
 [<InlineData("-67AAA", -67, 3)>]
-let ``Parse int (many1) - success`` (inp, value, endPos) =
-    let parser = pint
-    let act = run parser inp
+let ``Parse int (manyChars1) - success`` (inp, value, endPos) =
+    let act = run pint inp
     let inpSt = {
         lines = [| inp |]
         position = {
@@ -247,9 +246,8 @@ let ``Parse int (many1) - success`` (inp, value, endPos) =
 [<InlineData("", "No more input", 0)>]
 [<InlineData("S321", "Unexpected 'S'", 0)>]
 [<InlineData("-S321", "Unexpected 'S'", 1)>]
-let ``Parse int (many1) - failure`` (inp, errmsg, errpos) =
-    let parser = pint
-    let act = run parser inp
+let ``Parse int (manyChars1) - failure`` (inp, errmsg, errpos) =
+    let act = run pint inp
     let parPos = {
         currentLine = match inp with | "" -> "end of file" | _ -> inp
         line = 0
@@ -268,3 +266,33 @@ let ``Parse with label`` =
         coloumn = 0
     }
     Assert.Equal (Failure("digit", "Unexpected '|'", parPos), act)
+
+[<Theory>]
+[<InlineData("4.0", 4.0, 3)>]
+[<InlineData("-4.0", -4.0, 4)>]
+[<InlineData("-6.7AC", -6.7, 4)>]
+[<InlineData("6.877THD", 6.877, 5)>]
+let ``Parse float (manyChars1) - success`` (inp, value, endPos) =
+    let act = run pfloat inp
+    let inpSt = {
+        lines = [| inp |]
+        position = {
+            line = 0
+            coloumn = endPos
+        }
+    }
+    Assert.Equal (Success (value, inpSt), act)
+
+[<Theory>]
+[<InlineData("ABDE", "Unexpected 'A'", 0)>]
+[<InlineData("", "No more input", 0)>]
+[<InlineData("-4S321", "Unexpected 'S'", 2)>]
+[<InlineData("56.L321", "Unexpected 'L'", 3)>]
+let ``Parse float (manyChars1) - failure`` (inp, errmsg, errpos) =
+    let act = run pfloat inp
+    let parPos = {
+        currentLine = match inp with | "" -> "end of file" | _ -> inp
+        line = 0
+        coloumn = errpos
+    }
+    Assert.Equal (Failure ("float", errmsg, parPos), act)
