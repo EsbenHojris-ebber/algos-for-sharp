@@ -262,6 +262,14 @@ module Parser =
         head :: tail |> returnP))
         <?> label
 
+    let sepBy1 par sep =
+        let sebBy1 = sep >>. par
+        par .>>. many sebBy1
+        |>> fun (first, rest) -> first :: rest
+
+    let sepBy par sep =
+        sepBy1 par sep <|> returnP []
+
     let manyChars c = many c |>> charListToString
 
     let manyChars1 c = many1 c |>> charListToString
@@ -327,3 +335,16 @@ module Parser =
         |> mapP resultsToFloat
         <?> label
 
+    let createParserForwardedToRef () =
+        let dummyParser =
+            let innerFn _ = 
+                failwith "unfixed forwarded parser"
+            { parseFn = innerFn; label = "unknown"}
+
+        let parserRef = ref dummyParser
+
+        let innerFn input =
+            runOnInput !parserRef input
+        let wrapperParser = { parseFn = innerFn; label = "unknown"}
+
+        wrapperParser, parserRef

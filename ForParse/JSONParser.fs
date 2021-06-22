@@ -10,6 +10,8 @@ type JValue =
     | JObject of Map<string, JValue>
     | JArray of JValue list
 
+let jValue, jValueRef = createParserForwardedToRef<JValue> ()
+
 let ( >>% ) p x = p |>> (fun _ -> x)
 
 let jNull =
@@ -84,7 +86,7 @@ let JNumber =
 
     let e = pchar 'e' <|> pchar 'e'
 
-    let optPlusMinus = pchar '+' <|> pchar '-'
+    let optPlusMinus = pchar '+' <|> pchar '-' |> opt
 
     let nonZeroInt = 
         digitOneNine
@@ -95,7 +97,7 @@ let JNumber =
 
     let fractionPart = point >>. manyChars1 digit
 
-    let exponentPart = e >>. optSign .>>. manyChars1 digit
+    let exponentPart = e >>. optPlusMinus .>>. manyChars1 digit
 
     let ( |>? ) opt f =
         match opt with
@@ -123,3 +125,17 @@ let JNumber =
     |>> convertToJNumber
     .>> spaces1
     <?> "number"
+
+let JArray =
+    let left = pchar '[' .>> spaces
+    let right = pchar ']' .>> spaces
+    let comma = pchar ',' .>> spaces
+    let value = jValue .>> spaces
+
+    let values = sepBy value comma
+
+    left >>. values .>> right
+    |>> JArray
+    <?> "array" 
+
+jValueRef := JNumber

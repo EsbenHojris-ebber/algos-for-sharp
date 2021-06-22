@@ -53,6 +53,8 @@ module Parser =
     val lift2   : ('a -> 'b -> 'c) -> Parser<'a> -> Parser<'b> -> Parser<'c>
     val sequence: Parser<'a> list -> Parser<'a list>
     val opt     : Parser<'a> -> Parser<'a option>
+    val sepBy   : Parser<'a> -> Parser<'b> -> Parser<'a list>
+    val sepBy1  : Parser<'a> -> Parser<'b> -> Parser<'a list>
 
     val setLabel: Parser<'a> -> ParserLabel -> Parser<'a>
     val getLabel: Parser<'a> -> ParserLabel
@@ -67,6 +69,8 @@ module Parser =
     val ( <*> ) : Parser<'a -> 'b> -> Parser<'a> -> Parser<'b>
 
     val ( <?> ) : Parser<'a> -> ParserLabel -> Parser<'a>
+
+    val createParserForwardedToRef : unit -> Parser<'a> * Parser<'a> ref
 
     val run     : Parser<'a> -> string -> ParseResult<'a * InputState>
     val printResult : ParseResult<'a> -> unit
