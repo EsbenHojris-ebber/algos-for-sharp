@@ -10,8 +10,6 @@ type JValue =
     | JObject of Map<string, JValue>
     | JArray of JValue list
 
-let jValue, jValueRef = createParserForwardedToRef<JValue> ()
-
 let ( >>% ) p x = p |>> (fun _ -> x)
 
 let jNull =
@@ -30,52 +28,52 @@ let jBool =
 
     ptrue <|> pfalse
     <?> "bool"
+    
+let jUnescapedChar =
+    let label = "char"
+    satisfy (fun c -> c <> '\\' && c <> '\"') label
+
+let jEscapedChar =
+    [
+        ("\\\"", '\"')
+        ("\\\\", '\\')
+        ("\\/", '/')
+        ("\\b", '\b')
+        ("\\f", '\f')
+        ("\\n", '\n')
+        ("\\r", '\r')
+        ("\\t", '\t')
+    ]
+    |> List.map (fun (toMatch, result) ->
+        pstring toMatch >>% result)
+    |> choice
+    <?> "escaped char"
+
+let jUnicodeChar =
+    let backslash = pchar '\\'
+    let uChar = pchar 'u'
+    let hexdigit = anyOf (['0' .. '9'] @ ['a' .. 'f'] @ ['A' .. 'F'])
+    let fourHexdigits = hexdigit .>>. hexdigit .>>. hexdigit .>>. hexdigit 
+
+    let convertToChar (((h1, h2), h3), h4)=
+        let str = sprintf "%c%c%c%c" h1 h2 h3 h4
+        System.Int32.Parse(str, System.Globalization.NumberStyles.HexNumber) |> char
+
+    backslash >>. uChar >>. fourHexdigits
+    |>> convertToChar
+
+let quotedString = 
+    let quote = pchar '\"' <?> "quote"
+    let jChar = jUnescapedChar <|> jEscapedChar <|> jUnicodeChar
+
+    quote >>. manyChars jChar .>> quote
 
 let jString =
-    let jUnescapedChar =
-        let label = "char"
-        satisfy (fun c -> c <> '\\' && c <> '\"') label
-    
-    let jEscapedChar =
-        [
-            ("\\\"", '\"')
-            ("\\\\", '\\')
-            ("\\/", '/')
-            ("\\b", '\b')
-            ("\\f", '\f')
-            ("\\n", '\n')
-            ("\\r", '\r')
-            ("\\t", '\t')
-        ]
-        |> List.map (fun (toMatch, result) ->
-            pstring toMatch >>% result)
-        |> choice
-        <?> "escaped char"
-
-    let jUnicodeChar =
-        let backslash = pchar '\\'
-        let uChar = pchar 'u'
-        let hexdigit = anyOf (['0' .. '9'] @ ['a' .. 'f'] @ ['A' .. 'F'])
-        let fourHexdigits = hexdigit .>>. hexdigit .>>. hexdigit .>>. hexdigit 
-
-        let convertToChar (((h1, h2), h3), h4)=
-            let str = sprintf "%c%c%c%c" h1 h2 h3 h4
-            System.Int32.Parse(str, System.Globalization.NumberStyles.HexNumber) |> char
-
-        backslash >>. uChar >>. fourHexdigits
-        |>> convertToChar
-    
-    let quotedString = 
-        let quote = pchar '\"' <?> "quote"
-        let jChar = jUnescapedChar <|> jEscapedChar <|> jUnicodeChar
-
-        quote >>. manyChars jChar .>> quote
-
     quotedString
     |>> JString
     <?> "string"
 
-let JNumber =
+let jNumber =
     let optSign = pchar '-' |> opt
 
     let zero = pstring "0"
@@ -123,11 +121,14 @@ let JNumber =
 
     optSign .>>. intPart .>>. opt fractionPart .>>. opt exponentPart
     |>> convertToJNumber
-    .>> spaces1
     <?> "number"
 
-let JArray =
-    let left = pchar '[' .>> spaces
+let jNumber_ = jNumber .>> spaces1
+
+let jValue, jValueRef = createParserForwardedToRef<JValue> ()
+
+let jArray =
+    let left = spaces >>. pchar '[' .>> spaces
     let right = pchar ']' .>> spaces
     let comma = pchar ',' .>> spaces
     let value = jValue .>> spaces
@@ -138,4 +139,29 @@ let JArray =
     |>> JArray
     <?> "array" 
 
-jValueRef := JNumber
+let jObject =
+    let left = spaces >>. pchar '{' .>> spaces
+    let right = pchar '}' .>> spaces
+    let colon = pchar ':' .>> spaces
+    let comma = pchar ',' .>> spaces
+    let key = quotedString .>> spaces
+    let value = jValue .>> spaces
+
+    let keyValue = key .>> colon .>>. value
+    let keyValues = sepBy keyValue comma
+
+    left >>. keyValues .>> right
+    |>> Map.ofList
+    |>> JObject
+    <?> "object"
+
+jValueRef := choice
+    [
+        jNull
+        jBool
+        jNumber
+        jString
+        jArray
+        jObject
+    ]
+    <?> "JSON"

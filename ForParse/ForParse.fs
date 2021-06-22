@@ -13,7 +13,7 @@ module Parser =
 
     let incrCol pos = { pos with coloumn = pos.coloumn + 1 }
 
-    let incrLine pos = { line = pos.line; coloumn = 0 }
+    let incrLine pos = { line = pos.line + 1; coloumn = 0 }
 
     type InputState = {
         lines    : string[]
@@ -263,9 +263,11 @@ module Parser =
         <?> label
 
     let sepBy1 par sep =
+        let label = sprintf "parse at least one %s, seperated by %s" (getLabel par) (getLabel sep)
         let sebBy1 = sep >>. par
         par .>>. many sebBy1
         |>> fun (first, rest) -> first :: rest
+        <?> label
 
     let sepBy par sep =
         sepBy1 par sep <|> returnP []
